@@ -2,6 +2,8 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const { isAdmin } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +19,16 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false } // для локальной разработки
 }));
+
+app.get('/admin.html', isAdmin, (req, res, next) => {
+  next();
+});
+
+// Подключаем статику (важно, чтобы защита /admin.html шла ДО express.static)
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Статические файлы (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));

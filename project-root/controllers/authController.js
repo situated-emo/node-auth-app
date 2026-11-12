@@ -40,7 +40,9 @@ exports.login = async (req, res) => {
   // Сохраняем пользователя в сессии
   req.session.userId = user.id;
   req.session.username = user.username;
-  res.json({ message: 'Вход выполнен', redirect: '/dashboard.html' });
+  req.session.role = user.role;
+  const redirectUrl = user.role === 'admin' ? '/admin.html' : '/dashboard.html';
+  res.json({ message: 'Вход выполнен', redirect: redirectUrl });
 };
 
 exports.logout = (req, res) => {
@@ -48,3 +50,4 @@ exports.logout = (req, res) => {
     res.json({ message: 'Выход выполнен' });
   });
 };
+
