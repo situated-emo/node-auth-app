@@ -15,6 +15,8 @@ db.exec(`
   )
 `);
 
+
+
 console.log('✅ База данных SQLite подключена');
 
 module.exports = db;

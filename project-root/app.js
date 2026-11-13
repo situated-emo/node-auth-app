@@ -8,6 +8,9 @@ const { isAdmin } = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const { runMigrations } = require('./config/migrations');
+runMigrations();
+
 // Middleware для парсинга JSON и данных форм
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
