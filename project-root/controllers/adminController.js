@@ -1,5 +1,6 @@
 const User = require('../models/userModel');
 
+
 // Получить всех пользователей
 exports.getUsers = (req, res) => {
   try {
