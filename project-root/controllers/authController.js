@@ -51,3 +51,11 @@ exports.logout = (req, res) => {
   });
 };
 
+exports.me = (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Нет сессии' });
+  res.json({
+    id: req.session.userId,
+    username: req.session.username,
+    role: req.session.role
+  });
+};

@@ -7,3 +7,5 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 
 module.exports = router;
+const { requireAuth } = require('../middleware/roles');
+router.get('/me', requireAuth, authController.me);

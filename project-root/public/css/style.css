@@ -109,3 +109,137 @@ button:hover {
     padding: 0.85rem 1.25rem;
   }
 }
+
+/* Переменные проекта */
+:root {
+  --accent: #2563eb;
+  --bg: #f8fafc;
+  --surface: #fff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --danger: #dc2626;
+  --radius: 12px;
+}
+
+/* ---------- Layout приложения ---------- */
+.app-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.app-sidebar { display: none; }
+.app-main    { padding: 1rem; }
+
+@media (min-width: 768px) {
+  .app-layout { grid-template-columns: 240px 1fr; }
+  .app-sidebar {
+    display: block; background: #0f172a; color: #e2e8f0;
+    padding: 1.5rem 1rem; min-height: 100vh;
+  }
+  .app-main { padding: 2rem; }
+}
+
+/* Навигация */
+.side-nav a {
+  display: block; padding: .65rem .9rem; border-radius: 8px;
+  color: #cbd5e1; text-decoration: none; margin-bottom: .25rem;
+  font-weight: 500; font-size: .95rem;
+}
+.side-nav a:hover { background: #1e293b; color: #fff; }
+.side-nav a.active { background: var(--accent); color: #fff; }
+
+.side-user {
+  margin-top: 2rem; padding-top: 1rem;
+  border-top: 1px solid #1e293b; font-size: .85rem;
+}
+
+/* ---------- Карточки задач ---------- */
+.tasks-grid {
+  display: grid; gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .tasks-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .tasks-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  transition: box-shadow .15s, transform .15s;
+  cursor: pointer;
+}
+.task-card:hover { box-shadow: 0 4px 12px rgb(0 0 0 / .08); transform: translateY(-1px); }
+
+.task-card h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
+.task-meta {
+  display: flex; flex-wrap: wrap; gap: .4rem;
+  font-size: .78rem; color: var(--muted); margin-bottom: .75rem;
+}
+.task-meta span { background: var(--bg); padding: .1rem .5rem; border-radius: 6px; }
+
+/* ---------- Бейджи ---------- */
+.badge-status {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  padding: .2rem .55rem; border-radius: 999px; text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.badge-status.todo        { background: #f1f5f9; color: #475569; }
+.badge-status.in_progress { background: #fef3c7; color: #b45309; }
+.badge-status.review      { background: #ede9fe; color: #6d28d9; }
+.badge-status.done        { background: #dcfce7; color: #166534; }
+
+.badge-priority { font-size: .7rem; padding: .15rem .55rem; border-radius: 6px; font-weight: 600; }
+.badge-priority.low      { background: #f0fdf4; color: #166534; }
+.badge-priority.medium   { background: #eff6ff; color: #1e40af; }
+.badge-priority.high     { background: #fff7ed; color: #c2410c; }
+.badge-priority.critical { background: #fef2f2; color: #991b1b; }
+
+/* Кнопки */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: .6rem 1rem; border-radius: 8px; font-weight: 600;
+  font-size: .9rem; border: none; cursor: pointer; transition: background .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-ghost   { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+.btn-danger  { background: var(--danger); color: #fff; }
+
+/* Модалка */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgb(0 0 0 / .45);
+  display: none; align-items: center; justify-content: center; padding: 1rem;
+  z-index: 100;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--radius);
+  padding: 1.5rem; width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h2 { margin-top: 0; }
+
+/* Формы */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; margin-bottom: .35rem; font-weight: 500; font-size: .9rem; }
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%; padding: .65rem .9rem;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: .95rem; font-family: inherit;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / .15);
+}
