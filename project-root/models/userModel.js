@@ -36,3 +36,13 @@ module.exports = {
     return deleteUserStmt.run(id);
   }
 };
+
+const listAll = db.prepare(`
+  SELECT id, username, email, role, created_at FROM users ORDER BY id
+`);
+const updateRole = db.prepare(`UPDATE users SET role = ? WHERE id = ?`);
+const remove     = db.prepare(`DELETE FROM users WHERE id = ?`);
+
+module.exports.listAll    = () => listAll.all();
+module.exports.updateRole = (id, role) => updateRole.run(role, id);
+module.exports.remove     = (id) => remove.run(id);
