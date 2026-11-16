@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>TaskFlow — Проекты</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <h2 style="font-size:1.1rem; margin-bottom:1.5rem; color:#fff;">TaskFlow</h2>
+      <nav class="side-nav">
+        <a href="/dashboard.html">📊 Дашборд</a>
+        <a href="/tasks.html">✅ Задачи</a>
+        <a href="/projects.html" class="active">📁 Проекты</a>
+        <a href="/admin.html" id="adminLink" style="display:none;">⚙️ Админ</a>
+      </nav>
+      <div class="side-user">
+        <div id="userInfo">...</div>
+        <button class="btn btn-ghost" id="logoutBtn" style="margin-top:.75rem; width:100%; color:#cbd5e1; border-color:#334155;">Выйти</button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <h1>Проекты</h1>
+      <form id="createProjectForm" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:none; gap:.5rem; flex-wrap:wrap;">
+        <input type="text" id="projTitle" placeholder="Название проекта" required style="flex:1; padding:.5rem;">
+        <input type="text" id="projDesc" placeholder="Описание" style="flex:2; padding:.5rem;">
+        <button type="submit" class="btn">Создать проект</button>
+      </form>
+      <div id="projectsList" style="display:grid; gap:1rem;"></div>
+    </main>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    async function initProjects() {
+      const user = await window.currentUser;
+      if (user && (user.role === 'manager' || user.role === 'admin')) {
+        document.getElementById('createProjectForm').style.display = 'flex';
+      }
+      loadProjects();
+    }
+
+    async function loadProjects() {
+      const res = await fetch('/api/projects');
+      if (!res.ok) return;
+      const projects = await res.json();
+      document.getElementById('projectsList').innerHTML = projects.map(p => `
+        <div style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border);">
+          <h3>📁 ${p.title}</h3>
+          <p style="color:var(--muted); margin:.25rem 0;">${p.description || 'Без описания'}</p>
+          <small style="color:var(--muted);">Владелец: ${p.owner_name || '—'}</small>
+        </div>
+      `).join('') || '<p style="color:var(--muted);">Проектов пока нет.</p>';
+    }
+
+    document.getElementById('createProjectForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: document.getElementById('projTitle').value,
+          description: document.getElementById('projDesc').value
+        })
+      });
+      if (res.ok) {
+        e.target.reset();
+        loadProjects();
+      } else {
+        const err = await res.json();
+        alert(err.error);
+      }
+    });
+
+    initProjects();
+  </script>
+</body>
+</html>

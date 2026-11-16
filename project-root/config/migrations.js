@@ -10,6 +10,7 @@ function runMigrations() {
   if (!columnExists('users', 'role')) {
     db.exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`);
     console.log('  ↳ users.role добавлен');
+    db.prepare(`UPDATE users SET role = 'admin' WHERE username = 'admin'`).run();
   }
 
   // 2. Добавляем email (понадобится для уведомлений)

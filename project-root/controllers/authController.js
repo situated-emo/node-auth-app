@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
   req.session.username = user.username;
   req.session.role = user.role;
   const redirectUrl = user.role === 'admin' ? '/admin.html' : '/dashboard.html';
-  res.json({ message: 'Вход выполнен', redirect: '/dashboard.html' });
+  res.json({ message: 'Вход выполнен', redirect: redirectUrl });
 };
 
 exports.logout = (req, res) => {

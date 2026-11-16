@@ -38,7 +38,7 @@ module.exports = {
 };
 
 const listAll = db.prepare(`
-  SELECT id, username, email, role, created_at FROM users ORDER BY id
+  SELECT id, username, role, created_at FROM users ORDER BY id
 `);
 const updateRole = db.prepare(`UPDATE users SET role = ? WHERE id = ?`);
 const remove     = db.prepare(`DELETE FROM users WHERE id = ?`);

@@ -1,15 +1,14 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const { runMigrations } = require('./config/migrations');
+runMigrations();
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { isAdmin } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const { runMigrations } = require('./config/migrations');
-runMigrations();
 
 // Middleware для парсинга JSON и данных форм
 app.use(express.json());

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>TaskFlow — Задачи</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <h2 style="font-size:1.1rem; margin-bottom:1.5rem; color:#fff;">TaskFlow</h2>
+      <nav class="side-nav">
+        <a href="/dashboard.html">📊 Дашборд</a>
+        <a href="/tasks.html" class="active">✅ Задачи</a>
+        <a href="/projects.html">📁 Проекты</a>
+        <a href="/admin.html" id="adminLink" style="display:none;">⚙️ Админ</a>
+      </nav>
+      <div class="side-user">
+        <div id="userInfo">...</div>
+        <button class="btn btn-ghost" id="logoutBtn" style="margin-top:.75rem; width:100%; color:#cbd5e1; border-color:#334155;">Выйти</button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <h1>Все задачи</h1>
+      <form id="createTaskForm" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:none; gap:.5rem; flex-wrap:wrap;">
+        <input type="text" id="taskTitle" placeholder="Название задачи" required style="padding:.5rem;">
+        <select id="taskProject" required style="padding:.5rem;"></select>
+        <select id="taskAssignee" style="padding:.5rem;"><option value="">Без исполнителя</option></select>
+        <select id="taskPriority" style="padding:.5rem;">
+          <option value="low">low</option>
+          <option value="medium" selected>medium</option>
+          <option value="high">high</option>
+        </select>
+        <button type="submit" class="btn">Создать задачу</button>
+      </form>
+      <div id="stats" style="display:none;"></div>
+      <div class="tasks-grid" id="tasksGrid"></div>
+    </main>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/tasks.js"></script>
+  <script>
+    async function initTaskForm() {
+      const user = await window.currentUser;
+      if (!user || (user.role !== 'manager' && user.role !== 'admin')) return;
+      document.getElementById('createTaskForm').style.display = 'flex';
+
+      const [projRes, usersRes] = await Promise.all([fetch('/api/projects'), fetch('/api/auth/users')]);
+      if (projRes.ok) {
+        const projects = await projRes.json();
+        document.getElementById('taskProject').innerHTML = projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+      }
+      if (usersRes.ok) {
+        const users = await usersRes.json();
+        document.getElementById('taskAssignee').innerHTML += users.map(u => `<option value="${u.id}">${u.username} (${u.role})</option>`).join('');
+      }
+    }
+
+    document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: document.getElementById('taskTitle').value,
+          project_id: Number(document.getElementById('taskProject').value),
+          assignee_id: document.getElementById('taskAssignee').value ? Number(document.getElementById('taskAssignee').value) : null,
+          priority: document.getElementById('taskPriority').value
+        })
+      });
+      if (res.ok) {
+        e.target.reset();
+        renderTasks();
+      } else {
+        const err = await res.json();
+        alert(err.error);
+      }
+    });
+
+    initTaskForm();
+  </script>
+</body>
+</html>

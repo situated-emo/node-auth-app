@@ -69,8 +69,9 @@ exports.update = (req, res) => {
   if (!task) return res.status(404).json({ error: 'Не найдено' });
 
   const isAuthor   = task.author_id === req.session.userId;
+  const isAssignee = task.assignee_id === req.session.userId;
   const canEditAny = can(req.session.role, 'task:edit-any');
-  if (!canEditAny && !isAuthor) {
+  if (!canEditAny && !isAuthor && !isAssignee) {
     return res.status(403).json({ error: 'Нет прав на редактирование' });
   }
 

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>TaskFlow — Задача</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main style="max-width:600px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
+    <a href="/tasks.html">← Назад к задачам</a>
+    <h1 id="tTitle" style="margin-top:1rem;">Загрузка...</h1>
+    <p id="tDesc" style="color:var(--muted);"></p>
+
+    <div style="margin:1rem 0; display:flex; flex-direction:column; gap:.75rem;">
+      <label>Статус:
+        <select id="tStatus" style="padding:.4rem;">
+          <option value="todo">todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="review">review</option>
+          <option value="done">done</option>
+        </select>
+      </label>
+
+      <label id="assigneeBox">Исполнитель:
+        <select id="tAssignee" style="padding:.4rem;"><option value="">Не назначен</option></select>
+      </label>
+    </div>
+
+    <div style="display:flex; gap:.5rem;">
+      <button id="saveBtn" class="btn">Сохранить изменения</button>
+      <button id="deleteBtn" class="btn" style="background:#ef4444; display:none;">Удалить задачу</button>
+    </div>
+  </main>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    const taskId = new URLSearchParams(location.search).get('id');
+    let currentTask = null;
+
+    async function loadTask() {
+      const user = await window.currentUser;
+      const [taskRes, usersRes] = await Promise.all([fetch(`/api/tasks/${taskId}`), fetch('/api/auth/users')]);
+      if (!taskRes.ok) { alert('Задача не найдена или нет доступа'); location.href = '/tasks.html'; return; }
+
+      currentTask = await taskRes.json();
+      document.getElementById('tTitle').textContent = currentTask.title;
+      document.getElementById('tDesc').textContent = currentTask.description || '';
+      document.getElementById('tStatus').value = currentTask.status;
+
+      if (usersRes.ok) {
+        const users = await usersRes.json();
+        const sel = document.getElementById('tAssignee');
+        sel.innerHTML += users.map(u => `<option value="${u.id}">${u.username} (${u.role})</option>`).join('');
+        sel.value = currentTask.assignee_id || '';
+      }
+
+      // Только manager и admin видят кнопку удаления и могут менять исполнителя
+      if (user && (user.role === 'manager' || user.role === 'admin')) {
+        document.getElementById('deleteBtn').style.display = 'inline-block';
+      } else {
+        document.getElementById('tAssignee').disabled = true;
+      }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentTask.title,
+          description: currentTask.description,
+          priority: currentTask.priority,
+          due_date: currentTask.due_date,
+          status: document.getElementById('tStatus').value,
+          assignee_id: document.getElementById('tAssignee').value ? Number(document.getElementById('tAssignee').value) : null
+        })
+      });
+      const data = await res.json();
+      alert(res.ok ? 'Сохранено!' : data.error);
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      if (!confirm('Удалить задачу?')) return;
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      if (res.ok) location.href = '/tasks.html';
+      else alert((await res.json()).error);
+    });
+
+    loadTask();
+  </script>
+</body>
+</html>
