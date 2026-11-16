@@ -1,40 +1,35 @@
 const User = require('../models/userModel');
+const Activity = require('../models/activityModel');
+const { ROLES } = require('../middleware/roles');
 
+const VALID_ROLES = Object.values(ROLES);
 
-// Получить всех пользователей
-exports.getUsers = (req, res) => {
-  try {
-    const users = User.getAllUsers();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при получении пользователей' });
-  }
-};
+exports.listUsers = (req, res) => res.json(User.listAll());
 
-// Изменить имя или роль пользователя
-exports.updateUser = (req, res) => {
+exports.changeRole = (req, res) => {
   const { id } = req.params;
-  const { username, role } = req.body;
-
-  if (!username || !role) {
-    return res.status(400).json({ error: 'Имя и роль обязательны' });
+  const { role } = req.body;
+  if (!VALID_ROLES.includes(role)) {
+    return res.status(400).json({ error: 'Неизвестная роль' });
   }
-
-  try {
-    User.updateUser(id, username, role);
-    res.json({ message: 'Данные пользователя обновлены' });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при обновлении (возможно, имя занято)' });
+  if (Number(id) === req.session.userId) {
+    return res.status(400).json({ error: 'Нельзя менять роль самому себе' });
   }
+  User.updateRole(Number(id), role);
+  Activity.log({ user_id: req.session.userId, action: 'user.changeRole',
+                 entity_type: 'user', entity_id: Number(id), details: role });
+  res.json({ ok: true });
 };
 
-// Удалить пользователя
 exports.deleteUser = (req, res) => {
-  const { id } = req.params;
-  try {
-    User.deleteUser(id);
-    res.json({ message: 'Пользователь удалён' });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка при удалении' });
+  const id = Number(req.params.id);
+  if (id === req.session.userId) {
+    return res.status(400).json({ error: 'Нельзя удалить себя' });
   }
+  User.remove(id);
+  Activity.log({ user_id: req.session.userId, action: 'user.delete',
+                 entity_type: 'user', entity_id: id });
+  res.json({ ok: true });
 };
+
+exports.activityLog = (req, res) => res.json(Activity.recent(200));

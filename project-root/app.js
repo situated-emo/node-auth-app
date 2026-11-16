@@ -30,14 +30,12 @@ app.get('/admin.html', isAdmin, (req, res, next) => {
 // Подключаем статику (важно, чтобы защита /admin.html шла ДО express.static)
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
+const apiRoutes = require('./routes');
+app.use('/api', apiRoutes);
 
 // Статические файлы (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Маршруты авторизации
-app.use('/auth', authRoutes);
 
 // Главная страница — редирект на форму входа
 app.get('/', (req, res) => {

@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
-const { isAdmin } = require('../middleware/auth');
+const ctrl    = require('../controllers/adminController');
+const { requirePermission } = require('../middleware/roles');
 
-// Все маршруты ниже защищены проверкой isAdmin
-router.use(isAdmin);
-
-router.get('/users', adminController.getUsers);
-router.put('/users/:id', adminController.updateUser);
-router.delete('/users/:id', adminController.deleteUser);
+router.get('/users',      requirePermission('user:manage'), ctrl.listUsers);
+router.patch('/users/:id/role', requirePermission('role:change'), ctrl.changeRole);
+router.delete('/users/:id',     requirePermission('user:manage'), ctrl.deleteUser);
+router.get('/activity',         requirePermission('log:read'),   ctrl.activityLog);
 
 module.exports = router;
