@@ -30,12 +30,63 @@
       <button id="saveBtn" class="btn">Сохранить изменения</button>
       <button id="deleteBtn" class="btn" style="background:#ef4444; display:none;">Удалить задачу</button>
     </div>
+    <section style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+      <h2 style="font-size:1.1rem; margin-bottom:1rem;">Комментарии</h2>
+
+      <div id="commentsList" style="display:flex; flex-direction:column; gap:.75rem; margin-bottom:1.25rem;">
+        <p style="color:var(--muted); font-size:.9rem;">Загрузка комментариев...</p>
+      </div>
+
+      <!-- Форма отправки (только для user, manager, admin) -->
+      <form id="commentForm" style="display:none; flex-direction:column; gap:.5rem;">
+        <textarea id="commentBody" rows="3" placeholder="Написать комментарий..." required style="padding:.6rem; border:1px solid var(--border); border-radius:8px; resize:vertical; font-family:inherit;"></textarea>
+        <div style="display:flex; justify-content:flex-end;">
+          <button type="submit" class="btn">Отправить</button>
+        </div>
+      </form>
+
+      <!-- Сообщение для viewer -->
+      <p id="viewerNotice" style="display:none; font-size:.85rem; color:var(--muted); background:#f8fafc; padding:.75rem; border-radius:8px; border:1px solid var(--border);">
+        У вашей роли (<strong>viewer</strong>) нет прав на добавление комментариев.
+      </p>
+    </section>
   </main>
 
   <script src="/js/auth.js"></script>
   <script>
     const taskId = new URLSearchParams(location.search).get('id');
     let currentTask = null;
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+      }[c]));
+    }
+
+    async function loadComments() {
+      const listEl = document.getElementById('commentsList');
+      const res = await fetch(`/api/tasks/${taskId}/comments`);
+      if (!res.ok) {
+        listEl.innerHTML = `<p style="color:#ef4444; font-size:.9rem;">Не удалось загрузить комментарии.</p>`;
+        return;
+      }
+
+      const comments = await res.json();
+      if (!comments.length) {
+        listEl.innerHTML = `<p style="color:var(--muted); font-size:.9rem;">Комментариев пока нет.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = comments.map(c => `
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.35rem; font-size:.8rem; color:var(--muted);">
+            <strong style="color:#0f172a;">👤 ${escapeHtml(c.username)}</strong>
+            <span>${escapeHtml(c.created_at)}</span>
+          </div>
+          <div style="font-size:.92rem; white-space:pre-wrap; word-break:break-word;">${escapeHtml(c.body)}</div>
+        </div>
+      `).join('');
+    }
 
     async function loadTask() {
       const user = await window.currentUser;
@@ -60,7 +111,46 @@
       } else {
         document.getElementById('tAssignee').disabled = true;
       }
+      if (user && user.role === 'viewer') {
+        document.getElementById('tStatus').disabled = true;
+        document.getElementById('saveBtn').style.display = 'none';
+      }
+      if (user && ['user', 'manager', 'admin'].includes(user.role)) {
+        document.getElementById('commentForm').style.display = 'flex';
+      } else {
+        document.getElementById('viewerNotice').style.display = 'block';
+      }
+
+      await loadComments();
     }
+
+ document.getElementById('commentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const textarea = document.getElementById('commentBody');
+      const body = textarea.value.trim();
+      if (!body) return;
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/tasks/${taskId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body })
+        });
+
+        if (res.ok) {
+          textarea.value = '';
+          await loadComments();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Ошибка при отправке комментария');
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const res = await fetch(`/api/tasks/${taskId}`, {

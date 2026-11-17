@@ -23,6 +23,32 @@
 
     <main class="app-main">
       <h1>Все задачи</h1>
+      <div id="filtersBar" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+        <input type="text" id="filterSearch" placeholder="Поиск по названию..." style="padding:.5rem; flex:1; min-width:200px;">
+
+        <select id="filterStatus" style="padding:.5rem;">
+          <option value="">Все статусы</option>
+          <option value="todo">todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="review">review</option>
+          <option value="done">done</option>
+        </select>
+
+        <select id="filterPriority" style="padding:.5rem;">
+          <option value="">Все приоритеты</option>
+          <option value="low">low</option>
+          <option value="medium">medium</option>
+          <option value="high">high</option>
+          <option value="critical">critical</option>
+        </select>
+
+        <select id="filterAssignee" style="padding:.5rem; display:none;">
+          <option value="">Все исполнители</option>
+          <option value="unassigned">Без исполнителя</option>
+        </select>
+
+        <button type="button" class="btn btn-ghost" id="resetFiltersBtn">Сбросить</button>
+      </div>
       <form id="createTaskForm" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:none; gap:.5rem; flex-wrap:wrap;">
         <input type="text" id="taskTitle" placeholder="Название задачи" required style="padding:.5rem;">
         <select id="taskProject" required style="padding:.5rem;"></select>
@@ -31,6 +57,7 @@
           <option value="low">low</option>
           <option value="medium" selected>medium</option>
           <option value="high">high</option>
+          <option value="critical">critical</option>
         </select>
         <button type="submit" class="btn">Создать задачу</button>
       </form>

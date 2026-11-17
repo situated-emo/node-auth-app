@@ -30,6 +30,42 @@ const stmts = {
   remove: db.prepare(`DELETE FROM tasks WHERE id = ?`)
 };
 
+function filter({ q, status, priority, assigneeId, unassigned, restrictedUserId } = {}) {
+  const conditions = [];
+  const params = [];
+
+  // Если у пользователя нет права task:read-all — жёстко ограничиваем его своими задачами
+  if (restrictedUserId) {
+    conditions.push('(t.assignee_id = ? OR t.author_id = ?)');
+    params.push(restrictedUserId, restrictedUserId);
+  } else if (unassigned) {
+    conditions.push('t.assignee_id IS NULL');
+  } else if (assigneeId) {
+    conditions.push('t.assignee_id = ?');
+    params.push(assigneeId);
+  }
+
+  if (q) {
+    conditions.push('LOWER(t.title) LIKE LOWER(?)');
+    params.push(`%${q}%`);
+  }
+
+  if (status) {
+    conditions.push('t.status = ?');
+    params.push(status);
+  }
+
+  if (priority) {
+    conditions.push('t.priority = ?');
+    params.push(priority);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const sql = `${SELECT_BASE} ${whereClause} ORDER BY t.created_at DESC`;
+
+  return db.prepare(sql).all(...params);
+}
+
 module.exports = {
   all:         () => stmts.all.all(),
   byAssignee:  (uid) => stmts.byAssignee.all(uid),
@@ -37,5 +73,6 @@ module.exports = {
   findById:    (id) => stmts.findById.get(id),
   create:      (d) => stmts.insert.run(d),
   update:      (d) => stmts.update.run(d),
-  remove:      (id) => stmts.remove.run(id)
+  remove:      (id) => stmts.remove.run(id),
+  filter
 };

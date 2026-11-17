@@ -12,7 +12,7 @@ const PERMISSIONS = Object.freeze({
   'project:edit':   [ROLES.MANAGER, ROLES.ADMIN],
 
   'task:read-all':  [ROLES.MANAGER, ROLES.ADMIN],
-  'task:read-own':  [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN],
+  'task:read-own':  [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, ROLES.VIEWER],
   'task:create':    [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN],
   'task:edit-own':  [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN],
   'task:edit-any':  [ROLES.MANAGER, ROLES.ADMIN],

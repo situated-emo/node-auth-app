@@ -8,9 +8,33 @@ const VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'];
 
 // GET /api/tasks — менеджер/админ видят все, остальные — свои
 exports.list = (req, res) => {
-  const tasks = can(req.session.role, 'task:read-all')
-    ? Task.all()
-    : Task.byAssignee(req.session.userId);
+  const canReadAll = can(req.session.role, 'task:read-all');
+
+  const q        = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  const status   = VALID_STATUSES.includes(req.query.status) ? req.query.status : null;
+  const priority = VALID_PRIORITIES.includes(req.query.priority) ? req.query.priority : null;
+
+  let assigneeId = null;
+  let unassigned = false;
+
+  // Фильтр по исполнителю доступен только тем, кто видит все задачи
+  if (canReadAll && req.query.assignee_id) {
+    if (req.query.assignee_id === 'unassigned') {
+      unassigned = true;
+    } else if (!Number.isNaN(Number(req.query.assignee_id))) {
+      assigneeId = Number(req.query.assignee_id);
+    }
+  }
+
+  const tasks = Task.filter({
+    q: q || null,
+    status,
+    priority,
+    assigneeId,
+    unassigned,
+    restrictedUserId: canReadAll ? null : req.session.userId
+  });
+
   res.json(tasks);
 };
 
