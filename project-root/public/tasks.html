@@ -22,7 +22,11 @@
     </aside>
 
     <main class="app-main">
-      <h1>Все задачи</h1>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <h1 style="margin:0;">Все задачи</h1>
+        <button type="button" class="btn btn-primary" id="openCreateModalBtn" style="display:none; width:auto;">+ Создать задачу</button>
+      </div>
+
       <div id="filtersBar" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
         <input type="text" id="filterSearch" placeholder="Поиск по названию..." style="padding:.5rem; flex:1; min-width:200px;">
 
@@ -47,66 +51,153 @@
           <option value="unassigned">Без исполнителя</option>
         </select>
 
-        <button type="button" class="btn btn-ghost" id="resetFiltersBtn">Сбросить</button>
+        <button type="button" class="btn btn-ghost" id="resetFiltersBtn" style="width:auto;">Сбросить</button>
       </div>
-      <form id="createTaskForm" style="background:#fff; padding:1rem; border-radius:12px; border:1px solid var(--border); margin:1rem 0; display:none; gap:.5rem; flex-wrap:wrap;">
-        <input type="text" id="taskTitle" placeholder="Название задачи" required style="padding:.5rem;">
-        <select id="taskProject" required style="padding:.5rem;"></select>
-        <select id="taskAssignee" style="padding:.5rem;"><option value="">Без исполнителя</option></select>
-        <select id="taskPriority" style="padding:.5rem;">
-          <option value="low">low</option>
-          <option value="medium" selected>medium</option>
-          <option value="high">high</option>
-          <option value="critical">critical</option>
-        </select>
-        <button type="submit" class="btn">Создать задачу</button>
-      </form>
+
       <div id="stats" style="display:none;"></div>
       <div class="tasks-grid" id="tasksGrid"></div>
     </main>
   </div>
 
+  <!-- Модальное окно создания задачи -->
+  <div class="modal-backdrop" id="createTaskModal">
+    <div class="modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h2 style="margin:0;">Новая задача</h2>
+        <button type="button" class="btn btn-ghost" id="closeCreateModalBtn" style="width:auto;">✕</button>
+      </div>
+
+      <form id="createTaskForm">
+        <div class="form-group">
+          <label for="taskTitle">Название *</label>
+          <input type="text" id="taskTitle" placeholder="Название задачи" required>
+        </div>
+
+        <div class="form-group">
+          <label for="taskProject">Проект *</label>
+          <select id="taskProject" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescription">Описание</label>
+          <textarea id="taskDescription" rows="3" placeholder="Описание задачи"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="taskPriority">Приоритет</label>
+          <select id="taskPriority">
+            <option value="low">low</option>
+            <option value="medium" selected>medium</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDueDate">Срок выполнения</label>
+          <input type="date" id="taskDueDate">
+        </div>
+
+        <!-- Селект исполнителя для manager/admin -->
+        <div class="form-group" id="assigneeSelectGroup" style="display:none;">
+          <label for="taskAssigneeSelect">Исполнитель</label>
+          <select id="taskAssigneeSelect">
+            <option value="">Без исполнителя</option>
+          </select>
+        </div>
+
+        <!-- Скрытое поле «исполнитель = я» для user -->
+        <input type="hidden" id="taskAssigneeHidden" value="">
+
+        <div style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:1.25rem;">
+          <button type="button" class="btn btn-ghost" id="cancelCreateModalBtn" style="width:auto;">Отмена</button>
+          <button type="submit" class="btn btn-primary" style="width:auto;">Создать задачу</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/auth.js"></script>
   <script src="/js/tasks.js"></script>
   <script>
-    async function initTaskForm() {
+    async function initTaskModal() {
       const user = await window.currentUser;
-      if (!user || (user.role !== 'manager' && user.role !== 'admin')) return;
-      document.getElementById('createTaskForm').style.display = 'flex';
+      if (!user || !['user', 'manager', 'admin'].includes(user.role)) return;
 
-      const [projRes, usersRes] = await Promise.all([fetch('/api/projects'), fetch('/api/auth/users')]);
+      const modal = document.getElementById('createTaskModal');
+      const openBtn = document.getElementById('openCreateModalBtn');
+      const closeBtn = document.getElementById('closeCreateModalBtn');
+      const cancelBtn = document.getElementById('cancelCreateModalBtn');
+      const isManagerOrAdmin = user.role === 'manager' || user.role === 'admin';
+
+      openBtn.style.display = 'inline-flex';
+
+      const openModal = () => modal.classList.add('open');
+      const closeModal = () => modal.classList.remove('open');
+
+      openBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      const projRes = await fetch('/api/projects');
       if (projRes.ok) {
         const projects = await projRes.json();
-        document.getElementById('taskProject').innerHTML = projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+        document.getElementById('taskProject').innerHTML = projects
+          .map(p => `<option value="${p.id}">${escapeHtml(p.title)}</option>`)
+          .join('');
       }
-      if (usersRes.ok) {
-        const users = await usersRes.json();
-        document.getElementById('taskAssignee').innerHTML += users.map(u => `<option value="${u.id}">${u.username} (${u.role})</option>`).join('');
+
+      if (isManagerOrAdmin) {
+        document.getElementById('assigneeSelectGroup').style.display = 'block';
+        const usersRes = await fetch('/api/admin/users');
+        if (usersRes.ok) {
+          const users = await usersRes.json();
+          document.getElementById('taskAssigneeSelect').innerHTML += users
+            .map(u => `<option value="${u.id}">${escapeHtml(u.username)} (${escapeHtml(u.role)})</option>`)
+            .join('');
+        }
+      } else {
+        document.getElementById('taskAssigneeHidden').value = user.id;
       }
+
+      document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const assigneeRaw = isManagerOrAdmin
+          ? document.getElementById('taskAssigneeSelect').value
+          : document.getElementById('taskAssigneeHidden').value;
+
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('taskTitle').value.trim(),
+            project_id: Number(document.getElementById('taskProject').value),
+            description: document.getElementById('taskDescription').value.trim() || null,
+            priority: document.getElementById('taskPriority').value,
+            due_date: document.getElementById('taskDueDate').value || null,
+            assignee_id: assigneeRaw ? Number(assigneeRaw) : null
+          })
+        });
+
+        if (res.ok) {
+          e.target.reset();
+          if (!isManagerOrAdmin) {
+            document.getElementById('taskAssigneeHidden').value = user.id;
+          }
+          closeModal();
+          renderTasks();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Ошибка при создании задачи');
+        }
+      });
     }
 
-    document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: document.getElementById('taskTitle').value,
-          project_id: Number(document.getElementById('taskProject').value),
-          assignee_id: document.getElementById('taskAssignee').value ? Number(document.getElementById('taskAssignee').value) : null,
-          priority: document.getElementById('taskPriority').value
-        })
-      });
-      if (res.ok) {
-        e.target.reset();
-        renderTasks();
-      } else {
-        const err = await res.json();
-        alert(err.error);
-      }
-    });
-
-    initTaskForm();
+    initTaskModal();
   </script>
 </body>
 </html>

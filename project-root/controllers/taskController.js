@@ -62,8 +62,8 @@ exports.create = (req, res) => {
   }
 
   // Назначать исполнителя может только менеджер/админ
-  const finalAssignee = can(req.session.role, 'task:assign') && assignee_id
-    ? assignee_id
+  const finalAssignee = can(req.session.role, 'task:assign')
+    ? (assignee_id ? Number(assignee_id) : null)
     : req.session.userId; // иначе назначаем на себя
 
   const result = Task.create({
