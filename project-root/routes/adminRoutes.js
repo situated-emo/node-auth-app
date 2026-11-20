@@ -8,4 +8,8 @@ router.patch('/users/:id/role', requirePermission('role:change'), ctrl.changeRol
 router.delete('/users/:id',     requirePermission('user:manage'), ctrl.deleteUser);
 router.get('/activity',         requirePermission('log:read'),   ctrl.activityLog);
 
+router.get('/trash',                requirePermission('user:manage'), ctrl.getTrash);
+router.post('/trash/users/:id/restore', requirePermission('user:manage'), ctrl.restoreUser);
+router.post('/trash/tasks/:id/restore', requirePermission('user:manage'), ctrl.restoreTask);
+
 module.exports = router;

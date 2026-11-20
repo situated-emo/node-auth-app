@@ -6,16 +6,17 @@ const SELECT_BASE = `
          s.username AS assignee_name,
          p.title    AS project_title
   FROM tasks t
-  JOIN users a ON a.id = t.author_id
+  LEFT JOIN users a ON a.id = t.author_id
   LEFT JOIN users s ON s.id = t.assignee_id
-  JOIN projects p ON p.id = t.project_id
+  LEFT JOIN projects p ON p.id = t.project_id
 `;
 
 const stmts = {
-  all:            db.prepare(`${SELECT_BASE} ORDER BY t.created_at DESC`),
-  byAssignee:     db.prepare(`${SELECT_BASE} WHERE t.assignee_id = ? ORDER BY t.created_at DESC`),
-  byProject:      db.prepare(`${SELECT_BASE} WHERE t.project_id = ? ORDER BY t.created_at DESC`),
-  findById:       db.prepare(`${SELECT_BASE} WHERE t.id = ?`),
+  all:         db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC`),
+  byAssignee:  db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL AND t.assignee_id = ? ORDER BY t.created_at DESC`),
+  byProject:   db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL AND t.project_id = ? ORDER BY t.created_at DESC`),
+  findById:    db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL AND t.id = ?`),
+  listDeleted: db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NOT NULL ORDER BY t.deleted_at DESC`),
   insert: db.prepare(`
     INSERT INTO tasks (project_id, title, description, priority, author_id, assignee_id, due_date)
     VALUES (@project_id, @title, @description, @priority, @author_id, @assignee_id, @due_date)
@@ -25,16 +26,16 @@ const stmts = {
     SET title = @title, description = @description, status = @status,
         priority = @priority, assignee_id = @assignee_id, due_date = @due_date,
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = @id
+    WHERE id = @id AND deleted_at IS NULL
   `),
-  remove: db.prepare(`DELETE FROM tasks WHERE id = ?`)
+  remove:  db.prepare(`UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`),
+  restore: db.prepare(`UPDATE tasks SET deleted_at = NULL WHERE id = ?`)
 };
 
 function filter({ q, status, priority, assigneeId, unassigned, restrictedUserId } = {}) {
-  const conditions = [];
+  const conditions = ['t.deleted_at IS NULL'];
   const params = [];
 
-  // Если у пользователя нет права task:read-all — жёстко ограничиваем его своими задачами
   if (restrictedUserId) {
     conditions.push('(t.assignee_id = ? OR t.author_id = ?)');
     params.push(restrictedUserId, restrictedUserId);
@@ -60,7 +61,7 @@ function filter({ q, status, priority, assigneeId, unassigned, restrictedUserId 
     params.push(priority);
   }
 
-  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
   const sql = `${SELECT_BASE} ${whereClause} ORDER BY t.created_at DESC`;
 
   return db.prepare(sql).all(...params);
@@ -71,8 +72,10 @@ module.exports = {
   byAssignee:  (uid) => stmts.byAssignee.all(uid),
   byProject:   (pid) => stmts.byProject.all(pid),
   findById:    (id) => stmts.findById.get(id),
+  listDeleted: () => stmts.listDeleted.all(),
   create:      (d) => stmts.insert.run(d),
   update:      (d) => stmts.update.run(d),
   remove:      (id) => stmts.remove.run(id),
+  restore:     (id) => stmts.restore.run(id),
   filter
 };

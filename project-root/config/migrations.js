@@ -19,6 +19,16 @@ function runMigrations() {
     console.log('  ↳ users.email добавлен');
   }
 
+  if (!columnExists('users', 'deleted_at')) {
+    db.exec(`ALTER TABLE users ADD COLUMN deleted_at DATETIME`);
+    console.log('  ↳ users.deleted_at добавлен');
+  }
+
+  if (!columnExists('tasks', 'deleted_at')) {
+    db.exec(`ALTER TABLE tasks ADD COLUMN deleted_at DATETIME`);
+    console.log('  ↳ tasks.deleted_at добавлен');
+  }
+
   // 3. Первого пользователя делаем админом
   const hasAdmin = db.prepare(`SELECT COUNT(*) AS c FROM users WHERE role = 'admin'`).get().c;
   const total   = db.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;

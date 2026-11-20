@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Task = require('../models/taskModel');
 const Activity = require('../models/activityModel');
 const { ROLES } = require('../middleware/roles');
 
@@ -30,6 +31,29 @@ exports.deleteUser = (req, res) => {
   Activity.log({ user_id: req.session.userId, action: 'user.delete',
                  entity_type: 'user', entity_id: id });
   res.json({ ok: true });
+};
+
+exports.getTrash = (req, res) => {
+  res.json({
+    users: User.listDeleted(),
+    tasks: Task.listDeleted()
+  });
+};
+
+exports.restoreUser = (req, res) => {
+  const id = Number(req.params.id);
+  User.restore(id);
+  Activity.log({ user_id: req.session.userId, action: 'user.restore',
+                 entity_type: 'user', entity_id: id });
+  res.json({ ok: true, message: 'Пользователь восстановлен' });
+};
+
+exports.restoreTask = (req, res) => {
+  const id = Number(req.params.id);
+  Task.restore(id);
+  Activity.log({ user_id: req.session.userId, action: 'task.restore',
+                 entity_type: 'task', entity_id: id });
+  res.json({ ok: true, message: 'Задача восстановлена' });
 };
 
 exports.activityLog = (req, res) => res.json(Activity.recent(200));
